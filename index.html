@@ -55,6 +55,50 @@
         Confirm &amp; Open Arkpedia
       </button>
     </section>
+
+    <details id="settingsDetails" class="settings-panel">
+      <summary>Advanced OCR Settings</summary>
+      <div class="settings-body">
+
+        <div class="setting-row">
+          <div class="setting-label-row">
+            <label for="scanIntervalInput">Scan interval</label>
+            <span class="setting-value"><span id="scanIntervalValue">900</span> ms</span>
+          </div>
+          <input type="range" id="scanIntervalInput" min="300" max="3000" step="100" value="900" />
+          <p class="setting-help">How often a frame is captured and OCR'd. Lower = updates feel snappier but costs more CPU per second; raise it if scanning feels laggy or the phone gets warm. Default: 900 ms.</p>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label-row">
+            <label for="captureWidthInput">Capture width</label>
+            <span class="setting-value"><span id="captureWidthValue">900</span> px</span>
+          </div>
+          <input type="range" id="captureWidthInput" min="400" max="1600" step="50" value="900" />
+          <p class="setting-help">The frame is downscaled to this width before OCR. Higher preserves more detail (useful if text looks small or blurry) but slows every scan down; lower is faster but can start losing thin letterforms. Default: 900 px.</p>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label-row">
+            <label for="brightnessInput">Brightness threshold</label>
+            <span class="setting-value"><span id="brightnessValue">170</span></span>
+          </div>
+          <input type="range" id="brightnessInput" min="80" max="220" step="5" value="170" />
+          <p class="setting-help">Cutoff (0–255) used to turn the frame black &amp; white before OCR — pixels brighter than this become the white text Tesseract reads. Lower it if tags are getting missed in a dim or glary room; raise it if background noise is being picked up as text. Default: 170.</p>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label-row">
+            <label for="generosityInput">OCR generosity</label>
+            <span class="setting-value"><span id="generosityValue">0.22</span></span>
+          </div>
+          <input type="range" id="generosityInput" min="0.05" max="0.5" step="0.01" value="0.22" />
+          <p class="setting-help">How much OCR noise a tag can have and still count as a match, as a fraction of the tag's own length. Raise it to catch messier OCR (but short tags like AoE/DPS risk false positives); lower it to be stricter. Default: 0.22.</p>
+        </div>
+
+        <button id="resetSettingsBtn" class="btn small" type="button">Reset to Defaults</button>
+      </div>
+    </details>
   </main>
 
   <footer class="app-footer">

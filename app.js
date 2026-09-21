@@ -12,9 +12,39 @@
 (function () {
   "use strict";
 
-  const SCAN_INTERVAL_MS = 900;
-  const CAPTURE_TARGET_WIDTH = 900;
-  const BRIGHTNESS_THRESHOLD = 170; // 0-255, isolates the white tag text
+  // ---- Tunable OCR settings ------------------------------------------
+  // These are the same values described in the Advanced Settings panel.
+  // They start at these defaults and can be changed live from the UI;
+  // changes persist to localStorage (per-browser, never sent anywhere).
+  const DEFAULT_SETTINGS = {
+    scanIntervalMs: 900, // how often a frame is captured + OCR'd
+    captureWidth: 900, // frame is downscaled to this width before OCR
+    brightnessThreshold: 170, // 0-255 cutoff used to binarize the frame
+    ocrGenerosity: window.RecruitTags.DEFAULT_OCR_GENEROSITY, // see tags.js
+  };
+
+  const SETTINGS_STORAGE_KEY = "recruitScanSettings";
+
+  function loadSettings() {
+    let stored = {};
+    try {
+      const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+      if (raw) stored = JSON.parse(raw) || {};
+    } catch (err) {
+      // localStorage unavailable (private browsing, etc.) - defaults only.
+    }
+    return { ...DEFAULT_SETTINGS, ...stored };
+  }
+
+  function persistSettings() {
+    try {
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+    } catch (err) {
+      // ignore - settings just won't survive a reload
+    }
+  }
+
+  let settings = loadSettings();
 
   // ---- DOM references -----------------------------------------------
   const video = document.getElementById("video");
@@ -34,6 +64,16 @@
   const manualTagSelect = document.getElementById("manualTagSelect");
   const manualAddBtn = document.getElementById("manualAddBtn");
   const confirmBtn = document.getElementById("confirmBtn");
+
+  const scanIntervalInput = document.getElementById("scanIntervalInput");
+  const scanIntervalValue = document.getElementById("scanIntervalValue");
+  const captureWidthInput = document.getElementById("captureWidthInput");
+  const captureWidthValue = document.getElementById("captureWidthValue");
+  const brightnessInput = document.getElementById("brightnessInput");
+  const brightnessValue = document.getElementById("brightnessValue");
+  const generosityInput = document.getElementById("generosityInput");
+  const generosityValue = document.getElementById("generosityValue");
+  const resetSettingsBtn = document.getElementById("resetSettingsBtn");
 
   // ---- State ----------------------------------------------------------
   let worker = null; // Tesseract.js worker
@@ -144,7 +184,7 @@
     const vh = video.videoHeight;
     if (!vw || !vh) return null;
 
-    const scale = Math.min(1, CAPTURE_TARGET_WIDTH / vw);
+    const scale = Math.min(1, settings.captureWidth / vw);
     const w = Math.max(1, Math.round(vw * scale));
     const h = Math.max(1, Math.round(vh * scale));
 
@@ -158,9 +198,10 @@
     // Tesseract a clean, high-contrast image to work with.
     const imgData = ctx.getImageData(0, 0, w, h);
     const d = imgData.data;
+    const threshold = settings.brightnessThreshold;
     for (let i = 0; i < d.length; i += 4) {
       const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-      const v = lum >= BRIGHTNESS_THRESHOLD ? 255 : 0;
+      const v = lum >= threshold ? 255 : 0;
       d[i] = d[i + 1] = d[i + 2] = v;
     }
     ctx.putImageData(imgData, 0, 0);
@@ -178,7 +219,9 @@
     try {
       const { data } = await worker.recognize(canvas);
       const text = (data && data.text) || "";
-      const matches = window.RecruitTags.findMatches(text);
+      const matches = window.RecruitTags.findMatches(text, {
+        generosity: settings.ocrGenerosity,
+      });
       for (const { tag } of matches) addDetectedTag(tag);
     } catch (err) {
       console.error("OCR recognize failed", err);
@@ -190,7 +233,7 @@
   function startScanning() {
     if (scanning) return;
     scanning = true;
-    scanTimer = setInterval(scanOnce, SCAN_INTERVAL_MS);
+    scanTimer = setInterval(scanOnce, settings.scanIntervalMs);
   }
 
   function stopScanning() {
@@ -209,6 +252,14 @@
       startScanning();
       pauseBtn.textContent = "Pause Scan";
     }
+  }
+
+  /** Re-applies the current scan interval to a running timer without
+   * touching the paused/running state (unlike stopScanning+startScanning). */
+  function restartScanTimer() {
+    if (!scanning) return;
+    if (scanTimer) clearInterval(scanTimer);
+    scanTimer = setInterval(scanOnce, settings.scanIntervalMs);
   }
 
   // ---- Tag chip state --------------------------------------------------------
@@ -301,6 +352,53 @@
     }
   }
 
+  // ---- Advanced settings panel -----------------------------------------------
+  function applySettingsToInputs() {
+    scanIntervalInput.value = settings.scanIntervalMs;
+    scanIntervalValue.textContent = settings.scanIntervalMs;
+
+    captureWidthInput.value = settings.captureWidth;
+    captureWidthValue.textContent = settings.captureWidth;
+
+    brightnessInput.value = settings.brightnessThreshold;
+    brightnessValue.textContent = settings.brightnessThreshold;
+
+    generosityInput.value = settings.ocrGenerosity;
+    generosityValue.textContent = Number(settings.ocrGenerosity).toFixed(2);
+  }
+
+  scanIntervalInput.addEventListener("input", () => {
+    settings.scanIntervalMs = Number(scanIntervalInput.value);
+    scanIntervalValue.textContent = settings.scanIntervalMs;
+    persistSettings();
+    restartScanTimer();
+  });
+
+  captureWidthInput.addEventListener("input", () => {
+    settings.captureWidth = Number(captureWidthInput.value);
+    captureWidthValue.textContent = settings.captureWidth;
+    persistSettings();
+  });
+
+  brightnessInput.addEventListener("input", () => {
+    settings.brightnessThreshold = Number(brightnessInput.value);
+    brightnessValue.textContent = settings.brightnessThreshold;
+    persistSettings();
+  });
+
+  generosityInput.addEventListener("input", () => {
+    settings.ocrGenerosity = Number(generosityInput.value);
+    generosityValue.textContent = settings.ocrGenerosity.toFixed(2);
+    persistSettings();
+  });
+
+  resetSettingsBtn.addEventListener("click", () => {
+    settings = { ...DEFAULT_SETTINGS };
+    persistSettings();
+    applySettingsToInputs();
+    restartScanTimer();
+  });
+
   // ---- Event wiring --------------------------------------------------------
   startBtn.addEventListener("click", () => startCamera());
   switchCameraBtn.addEventListener("click", switchCamera);
@@ -318,6 +416,7 @@
 
   // ---- Init ------------------------------------------------------------------
   populateManualSelect();
+  applySettingsToInputs();
   renderTags();
   initOcrEngine();
 

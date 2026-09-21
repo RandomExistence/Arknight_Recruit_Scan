@@ -269,6 +269,86 @@ main {
   font-size: 1rem;
 }
 
+.settings-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 4px 14px 14px;
+}
+
+.settings-panel summary {
+  cursor: pointer;
+  padding: 10px 0;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text);
+  list-style: none;
+}
+
+.settings-panel summary::-webkit-details-marker {
+  display: none;
+}
+
+.settings-panel summary::before {
+  content: "▸";
+  display: inline-block;
+  width: 1em;
+  margin-right: 4px;
+  color: var(--text-dim);
+  transition: transform 0.15s ease;
+}
+
+.settings-panel[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.settings-body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding-top: 6px;
+}
+
+.setting-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.setting-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.88rem;
+  gap: 8px;
+}
+
+.setting-label-row label {
+  color: var(--text);
+}
+
+.setting-value {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.setting-row input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.setting-help {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+#resetSettingsBtn {
+  align-self: flex-start;
+}
+
 .app-footer {
   padding: 16px;
   text-align: center;

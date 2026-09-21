@@ -19,6 +19,13 @@
     "Fast-Redeploy", "Healing", "Nuker", "Robot", "Shift", "Slow", "Summon", "Support", "Survival"
   ];
 
+  // How generous the matcher is: the fraction of a tag's own (normalized)
+  // length that's allowed as OCR edit-distance noise before it stops
+  // counting as a match. Range (0, 1]. Tweakable live from the app's
+  // Advanced Settings panel (app.js); this is just the fallback default
+  // used whenever no explicit value is passed in.
+  const DEFAULT_OCR_GENEROSITY = 0.22;
+
   /**
    * Normalize a raw string for matching: uppercase, strip anything that
    * isn't a letter/space/hyphen, and collapse repeated whitespace.
@@ -61,9 +68,16 @@
     return prev[n];
   }
 
-  /** How many edits we tolerate for a tag of a given normalized length. */
-  function allowedEdits(len) {
-    return Math.max(1, Math.round(len * 0.22));
+  /**
+   * How many edits we tolerate for a tag of a given normalized length,
+   * at a given generosity (defaults to DEFAULT_OCR_GENEROSITY).
+   */
+  function allowedEdits(len, generosity) {
+    const g =
+      typeof generosity === "number" && generosity > 0
+        ? generosity
+        : DEFAULT_OCR_GENEROSITY;
+    return Math.max(1, Math.round(len * g));
   }
 
   /**
@@ -93,10 +107,19 @@
 
   /**
    * Scan raw OCR text for occurrences of known recruitment tags.
+   *
+   * `options.generosity` (0-1] overrides DEFAULT_OCR_GENEROSITY for this
+   * call — pass the live value from the Advanced Settings panel.
+   *
    * Returns an array of { tag, distance } sorted best-match-first,
    * limited to tags whose best match is within the allowed edit budget.
    */
-  function findMatches(rawText) {
+  function findMatches(rawText, options) {
+    const generosity =
+      options && typeof options.generosity === "number"
+        ? options.generosity
+        : DEFAULT_OCR_GENEROSITY;
+
     const norm = normalize(rawText);
     if (!norm) return [];
     const words = norm.split(" ").filter(Boolean);
@@ -105,7 +128,7 @@
     const results = [];
     for (const { tag, norm: tagNorm } of NORM_TAGS) {
       const dist = bestWindowDistance(tagNorm, words);
-      if (dist <= allowedEdits(tagNorm.length)) {
+      if (dist <= allowedEdits(tagNorm.length, generosity)) {
         results.push({ tag, distance: dist });
       }
     }
@@ -113,7 +136,13 @@
     return results;
   }
 
-  const RecruitTags = { ALL_TAGS, normalize, levenshtein, findMatches };
+  const RecruitTags = {
+    ALL_TAGS,
+    DEFAULT_OCR_GENEROSITY,
+    normalize,
+    levenshtein,
+    findMatches,
+  };
 
   if (typeof module !== "undefined" && module.exports) {
     module.exports = RecruitTags;
