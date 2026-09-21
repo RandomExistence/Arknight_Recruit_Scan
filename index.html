@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Arknight Recruit Scan</title>
+<meta name="description" content="Scan Arknights recruitment tags with your camera and jump straight to arkpedia.net with them selected." />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>Arknight Recruit Scan</h1>
+    <p class="subtitle">Point your camera at the in-game recruitment tags — matches will appear below.</p>
+  </header>
+
+  <main>
+    <section class="camera-panel">
+      <div class="video-wrap">
+        <video id="video" playsinline autoplay muted></video>
+        <canvas id="captureCanvas" hidden></canvas>
+        <div id="cameraOverlay" class="camera-overlay">
+          <p id="cameraStatus">Tap "Start Camera" to begin</p>
+        </div>
+      </div>
+
+      <div class="camera-controls">
+        <button id="startBtn" class="btn primary" type="button">Start Camera</button>
+        <button id="switchCameraBtn" class="btn" type="button" hidden>Switch Camera</button>
+        <button id="pauseBtn" class="btn" type="button" hidden>Pause Scan</button>
+      </div>
+
+      <p id="engineStatus" class="engine-status">Loading OCR engine…</p>
+    </section>
+
+    <section class="tags-panel">
+      <div class="tags-panel-header">
+        <h2>Detected Tags <span id="tagCount">(0)</span></h2>
+        <button id="clearBtn" class="btn small" type="button">Clear</button>
+      </div>
+
+      <p id="tagWarning" class="warning" hidden>Arknights only allows up to 5 tags at once — you've selected more than that.</p>
+
+      <ul id="tagList" class="tag-list" aria-live="polite"></ul>
+      <p id="emptyHint" class="empty-hint">No tags detected yet. Hold your camera steady over the Job Tags on screen.</p>
+
+      <div class="manual-add">
+        <label for="manualTagSelect">Add a tag manually</label>
+        <div class="manual-add-row">
+          <select id="manualTagSelect"></select>
+          <button id="manualAddBtn" class="btn small" type="button">Add</button>
+        </div>
+      </div>
+
+      <button id="confirmBtn" class="btn primary confirm-btn" type="button" disabled>
+        Confirm &amp; Open Arkpedia
+      </button>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <p>
+      Runs entirely in your browser — nothing is ever uploaded anywhere. Powered by
+      <a href="https://github.com/naptha/tesseract.js" target="_blank" rel="noopener">Tesseract.js</a>
+      and <a href="https://www.arkpedia.net/recruitment" target="_blank" rel="noopener">arkpedia.net</a>.
+    </p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script src="tags.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
